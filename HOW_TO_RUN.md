@@ -43,7 +43,6 @@ Open **http://127.0.0.1:8000/**. On your first visit, the app plays the first in
 | Place the robot | Pick a facing under the board, then click any tile. |
 | Move / turn | The on-screen arrow pad, or the keyboard: `↑` MOVE, `←` LEFT, `→` RIGHT, `Enter` REPORT |
 | Type commands | Enter one command per line in the command box, then click **RUN** (or press `Ctrl+Enter` / `Cmd+Enter`). |
-| Autoplay a specific file | Open `http://127.0.0.1:8000/?run=example_c` |
 
 The activity log under the board records every command and whether it was accepted or ignored.
 
@@ -78,7 +77,7 @@ REPORT
 ## 4. Run the tests
 
 ```bash
-.venv/bin/python manage.py test                              # all 75 tests
+.venv/bin/python manage.py test                              # all 73 tests
 .venv/bin/python manage.py test simulator.tests.test_core    # simulation rules only
 ```
 

@@ -30,13 +30,10 @@ def _page_context(request: HttpRequest) -> dict:
     context = services.view_context(simulation, services.load_log(request.session))
     input_files = inputs.list_input_files()
 
-    # `?run=<name>` auto-runs that file. Otherwise a first-time visitor gets the
-    # first file played for them, so the page opens on the simulator working.
-    requested = request.GET.get("run", "")
+    # A first-time visitor gets the first file played for them, so the page
+    # opens on the simulator working. Every later run is started from the UI.
     autoplay = None
-    if requested and inputs.get_input_file(requested):
-        autoplay = requested
-    elif input_files and services.should_autoplay(request.session):
+    if input_files and services.should_autoplay(request.session):
         autoplay = input_files[0].name
 
     context.update(

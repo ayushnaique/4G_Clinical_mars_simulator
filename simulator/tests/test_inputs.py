@@ -82,15 +82,6 @@ class AutoRunTests(SimpleTestCase):
         post_json(self.client, reverse("simulator:api-reset"))
         self.assertNotContains(self.client.get(reverse("simulator:index")), "data-autoplay=")
 
-    def test_query_parameter_selects_the_file_to_autoplay(self):
-        page = self.client.get(reverse("simulator:index") + "?run=example_c")
-        self.assertContains(page, 'data-autoplay="example_c"')
-
-    def test_unknown_query_file_is_ignored(self):
-        post_json(self.client, reverse("simulator:api-file-start", args=["example_a"]))
-        page = self.client.get(reverse("simulator:index") + "?run=../../etc/passwd")
-        self.assertNotContains(page, "data-autoplay=")
-
     def test_page_lists_each_file_with_its_starting_line(self):
         page = self.client.get(reverse("simulator:index"))
         self.assertContains(page, "STARTS: PLACE 1,2,EAST")  # example_c
