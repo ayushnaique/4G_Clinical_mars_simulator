@@ -1,0 +1,4 @@
+# Brief example A -- expected output: 0,1,NORTH
+PLACE 0,0,NORTH
+MOVE
+REPORT

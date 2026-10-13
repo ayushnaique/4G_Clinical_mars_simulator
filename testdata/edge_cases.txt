@@ -1,0 +1,19 @@
+# Falling is prevented, and the robot keeps taking orders afterwards.
+# Expected output:
+#   4,4,NORTH
+#   4,4,EAST
+#   0,0,SOUTH
+PLACE 4,4,NORTH
+MOVE            # ignored: north edge
+MOVE            # ignored again
+REPORT
+RIGHT
+MOVE            # ignored: east edge
+REPORT
+PLACE 0,0,SOUTH
+MOVE            # ignored: south edge
+LEFT
+LEFT
+RIGHT
+RIGHT
+REPORT

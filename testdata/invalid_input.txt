@@ -1,0 +1,14 @@
+# Everything before the first valid PLACE is discarded, and malformed lines
+# never abort the run. Expected output: 2,2,SOUTH
+MOVE                  # no robot yet
+REPORT                # no robot yet
+LEFT                  # no robot yet
+PLACE 9,9,NORTH       # off the table -- not a valid PLACE
+REPORT                # still no robot
+FLY                   # unknown command
+PLACE 1,1             # malformed: missing facing
+PLACE one,two,NORTH   # malformed: non-numeric
+PLACE 2,2,UPWARDS     # malformed: unknown direction
+PLACE -1,0,NORTH      # off the table
+place 2,2,south       # lowercase is accepted
+REPORT

@@ -1,0 +1,4 @@
+# Brief example B -- expected output: 0,0,WEST
+PLACE 0,0,NORTH
+LEFT
+REPORT

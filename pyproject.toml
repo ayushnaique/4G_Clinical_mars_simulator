@@ -1,0 +1,18 @@
+[project]
+name = "mars-robot-simulator"
+version = "1.0.0"
+description = "A toy robot on a tabletop, rendered as a retro top-down terminal (Django)."
+requires-python = ">=3.9"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes, I import order, B bugbear, UP pyupgrade,
+# SIM simplifications, DJ Django-specific rules.
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "DJ"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["robot", "simulator", "config"]

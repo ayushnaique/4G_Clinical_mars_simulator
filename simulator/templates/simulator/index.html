@@ -1,0 +1,198 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MARS ROBOT SIMULATOR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'simulator/css/retro.css' %}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#129302;</text></svg>">
+</head>
+<body>
+<div class="crt" id="app"
+     data-command-url="{% url 'simulator:api-command' %}"
+     data-place-url="{% url 'simulator:api-place' %}"
+     data-reset-url="{% url 'simulator:api-reset' %}"
+     data-file-start-url="{% url 'simulator:api-file-start' name='__name__' %}"
+     data-step-delay="{{ step_delay_ms }}"
+     {% if autoplay %}data-autoplay="{{ autoplay }}"{% endif %}>
+
+  <header class="masthead">
+    <h1>MARS ROBOT SIMULATOR</h1>
+    <p class="subtitle">SURFACE UNIT <span class="blink">&#9608;</span> {{ table.width }}&times;{{ table.height }} GRID &middot; ORIGIN SW</p>
+  </header>
+
+  <main class="console">
+
+    <section class="panel board-panel" aria-labelledby="board-heading">
+      <h2 id="board-heading" class="panel-title">TOP-DOWN VIEW</h2>
+
+      <div class="board-frame" style="--cols: {{ table.width }}; --rows: {{ table.height }};">
+        <!-- Column labels sit outside the grid so the grid stays a clean NxN. -->
+        <div class="axis axis-y" aria-hidden="true">
+          {% for row in rows %}<span>{{ row.y }}</span>{% endfor %}
+        </div>
+
+        {% comment %}
+        Each tile is a submit button belonging to #place-form (via the `form`
+        attribute), so clicking a tile places the robot with or without JS.
+        {% endcomment %}
+        <div class="board" id="board">
+          {% for row in rows %}{% for cell in row.cells %}
+          <button type="submit" form="place-form" name="cell" value="{{ cell.x }},{{ cell.y }}"
+                  class="cell{% if cell.occupied %} cell--occupied{% endif %}"
+                  data-x="{{ cell.x }}" data-y="{{ cell.y }}"
+                  aria-label="Place robot at {{ cell.x }},{{ cell.y }}">
+            <span class="cell-coord">{{ cell.x }},{{ cell.y }}</span>
+          </button>
+          {% endfor %}{% endfor %}
+
+          {% comment %}
+          The robot is positioned over the grid, not inside a cell, so it can
+          glide between cells instead of being re-parented on every move.
+          {% endcomment %}
+          <div class="robot{% if not robot %} robot--hidden{% endif %}" id="robot"
+               {% if robot %}style="--x: {{ robot.x }}; --y: {{ robot.y }};"{% endif %}
+               data-facing="{% if robot %}{{ robot.facing }}{% else %}NORTH{% endif %}"
+               role="img"
+               aria-label="{% if robot %}Robot at {{ robot.x }},{{ robot.y }} facing {{ robot.facing }}{% else %}Robot not placed{% endif %}">
+            <svg viewBox="0 0 48 48" class="robot-svg" aria-hidden="true">
+              <defs>
+                <filter id="glow"><feGaussianBlur stdDeviation="1.4" result="b"/>
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              </defs>
+              <g filter="url(#glow)">
+                <!-- Chassis -->
+                <rect x="12" y="14" width="24" height="22" rx="4" class="robot-body"/>
+                <!-- Tracks -->
+                <rect x="7"  y="16" width="5" height="18" rx="2" class="robot-track"/>
+                <rect x="36" y="16" width="5" height="18" rx="2" class="robot-track"/>
+                <!-- Heading arrow: the nose always points "up" in local space;
+                     the whole element is rotated by --angle. -->
+                <path d="M24 2 L33 13 L24 10 L15 13 Z" class="robot-nose"/>
+                <circle cx="24" cy="24" r="5" class="robot-eye"/>
+                <circle cx="24" cy="24" r="2" class="robot-pupil"/>
+              </g>
+            </svg>
+          </div>
+
+          <div class="scan" aria-hidden="true"></div>
+        </div>
+
+        <div class="axis axis-x" aria-hidden="true">
+          {% for cell in rows.0.cells %}<span>{{ cell.x }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <p class="readout" id="readout" aria-live="polite">
+        {% if report %}&gt; OUTPUT: {{ report }}{% else %}&gt; AWAITING PLACE COMMAND{% endif %}
+      </p>
+
+      <form method="post" action="{% url 'simulator:index' %}" id="place-form" class="place-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="place">
+        <fieldset class="facing-picker">
+          <legend class="field-label">CLICK A TILE TO PLACE, FACING</legend>
+          {% for direction in directions %}
+          <label class="facing-option">
+            <input type="radio" name="facing" value="{{ direction }}"{% if forloop.first %} checked{% endif %}>
+            <span>{{ direction }}</span>
+          </label>
+          {% endfor %}
+        </fieldset>
+      </form>
+
+      <div class="log-wrap">
+        <span class="field-label">ACTIVITY LOG</span>
+        <ul class="log" id="log" aria-live="polite">
+          {% for entry in log %}
+          <li class="log-entry{% if entry.error %} log-entry--error{% elif not entry.accepted %} log-entry--ignored{% endif %}">
+            <span class="log-cmd">{{ entry.source }}</span>
+            <span class="log-msg">{{ entry.message }}</span>
+          </li>
+          {% empty %}
+          <li class="log-entry log-entry--muted"><span class="log-msg">Board clear. Click any tile to place the robot, or run an input file.</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel control-panel" aria-labelledby="control-heading">
+      <h2 id="control-heading" class="panel-title">COMMAND DECK</h2>
+
+      <form method="post" action="{% url 'simulator:index' %}" id="command-form" class="command-form">
+        {% csrf_token %}
+        <label class="field">
+          <span class="field-label">ENTER COMMANDS (ONE PER LINE)</span>
+          <textarea name="script" id="script" rows="4" spellcheck="false"
+                    placeholder="PLACE 1,2,NORTH&#10;MOVE&#10;LEFT&#10;REPORT"></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary">RUN</button>
+          <button type="submit" name="action" value="reset" class="btn" formnovalidate>RESET</button>
+        </div>
+      </form>
+
+      <div class="dpad" role="group" aria-label="Quick commands">
+        <button class="btn btn--key" data-command="MOVE">&#9650;<small>MOVE</small></button>
+        <button class="btn btn--key" data-command="LEFT">&#8634;<small>LEFT</small></button>
+        <button class="btn btn--key" data-command="RIGHT">&#8635;<small>RIGHT</small></button>
+        <button class="btn btn--key" data-command="REPORT">&#9673;<small>REPORT</small></button>
+      </div>
+
+      <form method="post" action="{% url 'simulator:index' %}" class="inputs" id="file-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="file">
+        <span class="field-label">INPUT FILES &middot; AUTO-RUN</span>
+        <ul class="file-list">
+          {% for file in input_files %}
+          <li class="file" data-file="{{ file.name }}">
+            <button type="submit" name="name" value="{{ file.name }}" class="btn btn--ghost file-run"
+                    aria-label="Run {{ file.title }}">&#9654;</button>
+            <span class="file-meta">
+              <span class="file-title">{{ file.title }}</span>
+              {% if file.description %}<span class="file-desc">{{ file.description }}</span>{% endif %}
+              {% if file.start %}<span class="file-start">STARTS: {{ file.start }}</span>{% endif %}
+            </span>
+          </li>
+          {% empty %}
+          <li class="file file--empty">No .txt files found in the input folder.</li>
+          {% endfor %}
+        </ul>
+      </form>
+
+      <div class="program" id="program" hidden>
+        <div class="program-head">
+          <span class="field-label" id="program-title">PROGRAM</span>
+          <button type="button" class="btn btn--ghost" id="program-stop">STOP</button>
+        </div>
+        <ol class="program-lines" id="program-lines"></ol>
+      </div>
+
+
+      <details class="help">
+        <summary>COMMAND REFERENCE</summary>
+        <dl>
+          <dt>PLACE X,Y,F</dt><dd>Put the robot at X,Y facing NORTH / SOUTH / EAST / WEST.</dd>
+          <dt>MOVE</dt><dd>One unit forward. Ignored at the edge.</dd>
+          <dt>LEFT / RIGHT</dt><dd>Rotate 90&deg; in place.</dd>
+          <dt>REPORT</dt><dd>Announce X,Y,F.</dd>
+          <dt>TILE CLICK</dt><dd>PLACE the robot on that tile, facing the selected direction.</dd>
+          <dt>KEYS</dt><dd>&uarr; MOVE &middot; &larr; LEFT &middot; &rarr; RIGHT &middot; Enter REPORT &middot; Esc stops a run.</dd>
+        </dl>
+      </details>
+    </section>
+
+  </main>
+
+  <footer class="statusbar">
+    <span id="status">READY</span>
+    <span class="statusbar-right">4G CLINICAL &middot; TAKE-HOME</span>
+  </footer>
+</div>
+
+<script src="{% static 'simulator/js/simulator.js' %}" defer></script>
+</body>
+</html>
