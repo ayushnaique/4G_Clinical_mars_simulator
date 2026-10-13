@@ -1,7 +1,7 @@
 """Framework-free Mars robot simulation core.
 
 Importing this package pulls in no Django and no I/O: the same objects back
-the web app, the management command and the unit tests.
+the web app and the unit tests.
 """
 
 from .commands import (

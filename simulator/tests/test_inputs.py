@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import tempfile
 from pathlib import Path
 
@@ -10,11 +11,18 @@ from django.conf import settings
 from django.test import SimpleTestCase
 from django.urls import reverse
 
+from robot import Simulation, Table
 from simulator import inputs
 
 
 def post_json(client, url, payload=None):
     return client.post(url, data=json.dumps(payload or {}), content_type="application/json")
+
+
+def expected_reports(text: str) -> list[str]:
+    """Every X,Y,F a test file's comments say it should REPORT, in order."""
+    comments = "\n".join(line.split("#", 1)[1] for line in text.splitlines() if "#" in line)
+    return re.findall(r"\b\d+,\d+,(?:NORTH|EAST|SOUTH|WEST)\b", comments)
 
 
 class InputFileCatalogueTests(SimpleTestCase):
@@ -45,6 +53,17 @@ class InputFileCatalogueTests(SimpleTestCase):
     def test_missing_folder_is_an_empty_list(self):
         with self.settings(SIMULATION_INPUT_DIR="/definitely/not/here"):
             self.assertEqual(inputs.list_input_files(), [])
+
+    def test_each_file_reports_what_its_comments_promise(self):
+        files = sorted(Path(settings.SIMULATION_INPUT_DIR).glob("*.txt"))
+        self.assertTrue(files)
+        for path in files:
+            with self.subTest(file=path.name):
+                text = path.read_text()
+                expected = expected_reports(text)
+                self.assertTrue(expected, f"{path.name} does not state its expected output")
+                entries = Simulation(Table(5, 5)).run_script(text)
+                self.assertEqual([e.output for e in entries if e.output], expected)
 
 
 class AutoRunTests(SimpleTestCase):
@@ -100,10 +119,8 @@ class FileStartApiTests(SimpleTestCase):
             last = post_json(self.client, reverse("simulator:api-command"), {"script": line}).json()
         self.assertEqual(last["report"], "3,3,NORTH")
 
-    def test_every_file_plays_to_its_cli_result(self):
+    def test_stepping_matches_running_the_whole_file(self):
         """Stepping line by line must end where running the whole file does."""
-        from robot import Simulation, Table
-
         for input_file in inputs.list_input_files():
             with self.subTest(file=input_file.name):
                 post_json(self.client, reverse("simulator:api-file-start", args=[input_file.name]))

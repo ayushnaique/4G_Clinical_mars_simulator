@@ -1,8 +1,8 @@
 """The input files the UI can auto-run.
 
 The `.txt` scripts in `settings.SIMULATION_INPUT_DIR` are the single source of
-test data: the CLI runs them, the tests reference them, and the page lists them
-as one-click runs. Adding a scenario means dropping a file in that folder.
+test data: the tests check them and the page lists them as one-click runs.
+Adding a scenario means dropping a file in that folder.
 
 Files are only ever addressed by a name taken from `list_input_files()`, never
 by a path from the request, so a client cannot ask for `../config/settings.py`.

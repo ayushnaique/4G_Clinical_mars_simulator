@@ -2,8 +2,8 @@
 
 `Simulation` owns a Table and the current RobotState. Its main verb is
 `run_script`, which takes one or many lines. Everything it returns is plain
-data, so the Django views, the management command and the tests all drive
-the same object and differ only in how they render the result.
+data, so the Django views and the tests drive the same object and differ only
+in how they render the result.
 """
 
 from __future__ import annotations

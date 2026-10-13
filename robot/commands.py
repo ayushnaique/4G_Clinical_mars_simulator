@@ -7,7 +7,7 @@ it by name, so the parser never grows an if/else chain and adding a command
 
 `apply` returns a CommandOutcome rather than mutating anything. The outcome
 carries the next state *and* a human-readable note, which is what the UI's
-activity log and the CLI's stdout both render.
+activity log renders.
 """
 
 from __future__ import annotations

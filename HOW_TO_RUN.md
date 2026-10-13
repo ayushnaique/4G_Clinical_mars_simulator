@@ -1,7 +1,7 @@
 # Mars Robot Simulator: how to run
 
-A Django app that simulates a robot on a 5x5 table, with a retro top-down UI in the
-browser and a command-line runner for input files.
+A Django web app that simulates a robot on a 5x5 table, shown as a retro top-down view in
+the browser.
 
 ## Requirements
 
@@ -11,12 +11,12 @@ browser and a command-line runner for input files.
 
 ## 1. Get the code and install
 
-Fork this repository on GitHub (the **Fork** button at the top right), then clone your fork.
-To run it without forking, clone this repository directly instead.
+Fork this repository on GitHub (the **Fork** button at the top right), then clone your fork by
+replacing `ayushnaique` with your GitHub username below. To run it without forking, clone it as is.
 
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/ayushnaique/4G_Clinical_mars_simulator.git
+cd 4G_Clinical_mars_simulator
 
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
@@ -51,25 +51,11 @@ If the page has no JavaScript, it still works: every button is a normal form.
 
 Stop the server with `Ctrl+C`. If you see "That port is already in use", another server is still running. Stop it, or use a different port: `.venv/bin/python manage.py runserver 8001`.
 
-## 3. Run input files from the command line
+## 3. Input files
 
-The `simulate` command reads a file, or stdin when no file is given. It prints one line for each `REPORT`.
+The files in `testdata/` appear in the **INPUT FILES** list in the web app. Click ▶ to play one.
 
-```bash
-.venv/bin/python manage.py simulate testdata/example_a.txt        # 0,1,NORTH
-.venv/bin/python manage.py simulate testdata/edge_cases.txt
-.venv/bin/python manage.py simulate --verbose testdata/invalid_input.txt   # show every step
-
-# from stdin
-printf "PLACE 0,0,NORTH\nMOVE\nREPORT\n" | .venv/bin/python manage.py simulate
-
-# a different table size
-.venv/bin/python manage.py simulate --width 3 --height 8 testdata/example_c.txt
-```
-
-### Included input files (`testdata/`)
-
-| File | Exercises | Expected output |
+| File | Exercises | Expected REPORT output |
 |---|---|---|
 | `example_a.txt` | Brief example A | `0,1,NORTH` |
 | `example_b.txt` | Brief example B | `0,0,WEST` |
@@ -79,7 +65,7 @@ printf "PLACE 0,0,NORTH\nMOVE\nREPORT\n" | .venv/bin/python manage.py simulate
 
 To add a scenario, put a new `.txt` file in `testdata/`. It shows up in the web UI's file list automatically.
 
-Input format: one command per line. Case is ignored. `#` starts a comment.
+File format: one command per line. Case is ignored. `#` starts a comment.
 
 ```
 PLACE X,Y,F     F is NORTH, SOUTH, EAST or WEST; (0,0) is the south-west corner
@@ -92,7 +78,7 @@ REPORT
 ## 4. Run the tests
 
 ```bash
-.venv/bin/python manage.py test                              # all 79 tests
+.venv/bin/python manage.py test                              # all 75 tests
 .venv/bin/python manage.py test simulator.tests.test_core    # simulation rules only
 ```
 
@@ -139,7 +125,7 @@ The UI talks to these endpoints. You can call them directly too; send a POST wit
 
 ```
 robot/        simulation rules, plain Python (no Django)
-simulator/    Django app: views, templates, CSS/JS, `simulate` command, tests
+simulator/    Django app: views, templates, CSS/JS, tests
 config/       Django settings and URLs
-testdata/     input files used by the UI, the CLI and the tests
+testdata/     input files used by the UI and the tests
 ```
